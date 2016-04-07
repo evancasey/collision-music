@@ -21,6 +21,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
           osc.connect(gainNode);
 
           gainNode.connect(audioCtx.destination);
+          gainNode.gain.value = 0.1;
           osc.type = 'sine';
 
           return { node: node,
@@ -114,21 +115,28 @@ navigator.mediaDevices.getUserMedia( {audio: true})
                         l = Math.sqrt(x * x + y * y),
                         r = node.radius + quad.point.radius;
                     if (l < r) {
-                        makeSound(node);
+                        startSound(nodeWithOsc);
                         l = (l - r) / l * .5;
                         node.x -= x *= l;
                         node.y -= y *= l;
                         quad.point.x += x;
                         quad.point.y += y;
+                    } else {
+                        stopSound(nodeWithOsc);
                     }
                 }
                 return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
             };
         };
 
-        function makeSound(node) {
+        function startSound(nodeWithOsc) {
+          console.log("start: "  + nodeWithOsc.osc.frequency.value);
+          nodeWithOsc.osc.frequency.value = 1000;
+        }
 
-          osc.frequency.value = 100;
+        function stopSound(nodeWithOsc) {
+          console.log("stop: " + nodeWithOsc.osc.frequency.value);
+          nodeWithOsc.osc.frequency.value = 0;
         }
 
      })
