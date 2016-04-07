@@ -12,7 +12,29 @@ navigator.mediaDevices.getUserMedia( {audio: true})
 
         var width = 1024,
             height = 700,
-            numNodes = 20;
+            numNodes = 25;
+
+
+        var synth = new Tone.MonoSynth({
+          "portamento" : 0.01,
+          "oscillator" : {
+            "type" : "square"
+          },
+          "envelope" : {
+            "attack" : 0.005,
+            "decay" : 0.2,
+            "sustain" : 0.4,
+            "release" : 1.4,
+          },
+          "filterEnvelope" : {
+            "attack" : 0.005,
+            "decay" : 0.1,
+            "sustain" : 0.05,
+            "release" : 0.8,
+            "baseFrequency" : 300,
+            "octaves" : 4
+          }
+        }).toMaster();
 
         // node -> nodeWithOsc
         function toNodeWithOsc(node) {
@@ -25,9 +47,12 @@ navigator.mediaDevices.getUserMedia( {audio: true})
           osc.type = 'sine';
           osc.start(0);
 
+          var freq = Math.floor(Math.random(0) * 1000);
+
           return { node: node,
                    gainNode: gainNode,
                    osc: osc,
+                   freq: freq,
                    isPlaying: false };
         }
          
@@ -39,7 +64,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
           
 
         var nodes = d3.range(numNodes)
-            .map(function(j) { return {radius: 12} });
+            .map(function(j) { return {radius: 8} });
 
         var nodesWithOsc = nodes.map(function(n) { return toNodeWithOsc(n) });
 
@@ -52,8 +77,9 @@ navigator.mediaDevices.getUserMedia( {audio: true})
         root.fixed = true;
 
         var force = d3.layout.force()
-                .gravity(0)   // seems like 'else' in charge is the radius of your mouse -> the radiuse by which the other nodes are repelled by
-                .charge(function(d, i) { return i ? 0 : -500; })   // return i ? means if i exists (aka True) return 0, else -2000
+                .gravity(0.0)   // seems like 'else' in charge is the radius of your mouse -> the radiuse by which the other nodes are repelled by
+                //.charge(function(d, i) { return i ? 0 : -200; })   // return i ? means if i exists (aka True) return 0, else -2000
+                .charge(0)
                 .nodes(nodes)
                 .size([width, height]);
 
@@ -76,7 +102,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
             var drawvisual = requestAnimationFrame(draw);
             for (var j = 0; j < numNodes; j++) {
               var t = new Date();
-              nodes[j].radius = Math.abs(Math.sin(t/200)) * 40 + 10;
+              nodes[j].radius = Math.abs(Math.sin(t/200)) * 20 + 6;
             }
 
             var q = d3.geom.quadtree(extractNodes(nodesWithOsc)),         // constructs quadtree from nodes array -> this speeds up the operations to de carried out on each node
@@ -123,9 +149,8 @@ navigator.mediaDevices.getUserMedia( {audio: true})
                         l = Math.sqrt(x * x + y * y),
                         r = node.radius + quad.point.radius;
                     if (l < r) {
-                        console.log("collide");
                         startSound(nodeWithOsc);
-                        l = (l - r) / l * .5;
+                        l = (l - r) / l * 10;
                         node.x -= x *= l;
                         node.y -= y *= l;
                         quad.point.x += x;
@@ -147,7 +172,8 @@ navigator.mediaDevices.getUserMedia( {audio: true})
              // nodeWithOsc.gainNode.gain.value = 0.1;
             // nodeWithOsc.osc.frequency.value = 500;
            
-              synth.triggerAttackRelease("C2", "8n");
+              //synth.triggerAttackRelease("C4", "8n");
+            synth.triggerAttack(nodeWithOsc.freq);
 
             clearTimeout();
             
