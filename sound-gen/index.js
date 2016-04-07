@@ -111,11 +111,13 @@ var maxSpeed = 5,
 
 /* init drum nodes */
 
-var monoNodes = d3.range(3)
+var monoNodes = d3.range(5)
     .map(function(j) { 
         return { radius: 8,
-                 speedX: (Math.random() - 0.5) * 2 * maxSpeed,
-                 speedY: (Math.random() - 0.5) * 2 * maxSpeed,
+                 //speedX: (Math.random() - 0.5) * 2 * maxSpeed,
+                 //speedY: (Math.random() - 0.5) * 2 * maxSpeed,
+                 speedX: 0.2 *2 * maxSpeed,
+                 speedY: 0.2 *2 * maxSpeed,
                  x: rect[0] + (Math.random() * (rect[2] - rect[0])),
                  y: rect[1] + (Math.random() * (rect[3] - rect[1]))
                }
@@ -143,33 +145,69 @@ var monoNodesWithSynth = monoNodes.map(function(n) {
       }
     }).toMaster();
 
-    return toNodeWithSynth(n, synth) 
+    return toNodeWithSynth(n, synth, "mono");
 });
 
 var svg = d3.select("#d3canvas").append("svg")     // select body element and create svg element inside
         .attr("width", rect[2])
         .attr("height", rect[3]);
+
 initStatefulLayout(monoNodes, monoNodesWithSynth, rect, svg);
 
 /* init drum nodes */
 
-/*
-var synth = new Tone.DrumSynth().toMaster();
-synth.triggerAttackRelease("C2", "8n");
-*/
+var drumNodes = d3.range(5)
+    .map(function(j) { 
+        return { radius: 8,
+                 //speedX: (Math.random() - 0.5) * 2 * maxSpeed,
+                 //speedY: (Math.random() - 0.5) * 2 * maxSpeed,
+                 speedX: 0.2 *2 * maxSpeed,
+                 speedY: 0.2 *2 * maxSpeed,
+                 x: rect[0] + (Math.random() * (rect[2] - rect[0])),
+                 y: rect[1] + (Math.random() * (rect[3] - rect[1]))
+               }
+     });
+
+var drumNodesWithSynth = drumNodes.map(function(n) { 
+
+    var drumCompress = new Tone.Compressor({
+        "threshold" : -30,
+        "ratio" : 6,
+        "attack" : 0.3,
+        "release" : 0.1
+      }).toMaster();
+
+    var synth = new Tone.DrumSynth(
+    {
+		"pitchDecay" : 0.01,
+		"octaves" : 6,
+		"oscillator" : {
+			"type" : "square4"
+		},
+		"envelope" : {
+			"attack" : 0.001,
+			"decay" : 0.2,
+			"sustain" : 0
+		}
+              }
+    ).connect(drumCompress);
+
+    return toNodeWithSynth(n, synth, "drum");
+});
 
 var svg1 = d3.select("#d3canvas").append("svg")     // select body element and create svg element inside
         .attr("width", rect[2])
         .attr("height", rect[3]);
+
 initStatefulLayout(drumNodes, drumNodesWithSynth, rect, svg1);
 
 /* Non-stateful convenience functions */
 
 // node -> nodeWithOsc
-function toNodeWithSynth(node, synth) {
+function toNodeWithSynth(node, synth, type) {
     var freq = Math.floor(Math.random(0) * 1000);
-
-    return { node: node,
+    return { type: type,
+             node: node,
              freq: freq,
              synth: synth,
              isPlaying: false };
@@ -184,7 +222,15 @@ function extractNodes(nodesWithSynth) {
 function startSound(nodeWithOsc) {
     if (!nodeWithOsc.isPlaying) {
         nodeWithOsc.isPlaying = true;
-        nodeWithOsc.synth.triggerAttack(nodeWithOsc.freq);
+
+        if (nodeWithOsc.type === "drum") {
+          nodeWithOsc.synth.triggerAttackRelease("C1", "2n");
+        }
+
+        if (nodeWithOsc.type === "mono") {
+          nodeWithOsc.synth.triggerAttack(nodeWithOsc.freq);
+        }
+
         setTimeout(function() {
           nodeWithOsc.synth.triggerRelease();
         }, 10);
