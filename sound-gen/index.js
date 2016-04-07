@@ -12,7 +12,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
 
         var width = 1024,
             height = 700,
-            numNodes = 8;
+            numNodes = 20;
 
         // node -> nodeWithOsc
         function toNodeWithOsc(node) {
@@ -38,9 +38,10 @@ navigator.mediaDevices.getUserMedia( {audio: true})
         }
           
 
-        var nodesWithOsc = d3.range(numNodes)
-            .map(function(j) { return {radius: 12} })
-            .map(function(n) { return toNodeWithOsc(n) });
+        var nodes = d3.range(numNodes)
+            .map(function(j) { return {radius: 12} });
+
+        var nodesWithOsc = nodes.map(function(n) { return toNodeWithOsc(n) });
 
         var root = nodesWithOsc[0].node,
             color = d3.scale.linear()
@@ -51,9 +52,9 @@ navigator.mediaDevices.getUserMedia( {audio: true})
         root.fixed = true;
 
         var force = d3.layout.force()
-                .gravity(0.001)   // seems like 'else' in charge is the radius of your mouse -> the radiuse by which the other nodes are repelled by
-                .charge(function(d, i) { return i ? 0 : -100; })   // return i ? means if i exists (aka True) return 0, else -2000
-                .nodes(extractNodes(nodesWithOsc))
+                .gravity(0)   // seems like 'else' in charge is the radius of your mouse -> the radiuse by which the other nodes are repelled by
+                .charge(function(d, i) { return i ? 0 : -500; })   // return i ? means if i exists (aka True) return 0, else -2000
+                .nodes(nodes)
                 .size([width, height]);
 
         force.start();
@@ -63,14 +64,20 @@ navigator.mediaDevices.getUserMedia( {audio: true})
                 .attr("height", height);
 
         svg.selectAll("circle")
-            .data(extractNodes(nodesWithOsc).slice(1))
+            .data(nodes.slice(1))
             .enter().append("circle")
             .attr("r", function(d) { return d.radius; })
             .style("fill", function(d, i) { return color(i); });
 
 
+        var synth = new Tone.DrumSynth().toMaster();
+
         function draw() {
             var drawvisual = requestAnimationFrame(draw);
+            for (var j = 0; j < numNodes; j++) {
+              var t = new Date();
+              nodes[j].radius = Math.abs(Math.sin(t/200)) * 40 + 10;
+            }
 
             var q = d3.geom.quadtree(extractNodes(nodesWithOsc)),         // constructs quadtree from nodes array -> this speeds up the operations to de carried out on each node
                 // quadtree returns the root node of a new quadtree
@@ -80,14 +87,14 @@ navigator.mediaDevices.getUserMedia( {audio: true})
             while (++i < n) q.visit(collide(nodesWithOsc[i]));      // visit each node and take 5 arguments: quad, x1,y1,x2,y2
 
             svg.selectAll("circle")
-                .attr("cx", function(d) { return d.x; }) // cx, cy is the position of each node -> set their coordinates to the newly defined coordinates from collide()
-                .attr("cy", function(d) { return d.y; })
+                .attr("cx", function(d) { return d.x = Math.max(d.radius, Math.min(width - d.radius, d.x)); }) // cx, cy is the position of each node -> set their coordinates to the newly defined coordinates from collide()
+                .attr("cy", function(d) { return d.y = Math.max(d.radius, Math.min(height - d.radius, d.y)); })
                 .attr("r", function(d) { return d.radius; })      
                 .style("fill", "#fcc8c9")
                 .style("opacity", 0.9);
 
             // keep balls bouncing
-            force.alpha(1);
+            force.alpha(10);
         };
         draw();
 
@@ -132,26 +139,35 @@ navigator.mediaDevices.getUserMedia( {audio: true})
         };
 
         function startSound(nodeWithOsc) {
+          console.log(nodeWithOsc.isPlaying);
           if (!nodeWithOsc.isPlaying) {
             console.log('start: ' + nodeWithOsc.osc.frequency.value);
+            
             nodeWithOsc.isPlaying = true;
-            nodeWithOsc.gainNode.gain.value = 0.1;
-            nodeWithOsc.osc.frequency.value = 500;
+             // nodeWithOsc.gainNode.gain.value = 0.1;
+            // nodeWithOsc.osc.frequency.value = 500;
+           
+              synth.triggerAttackRelease("C2", "8n");
+
+            clearTimeout();
+            
           }
         }
+
 
         function stopSound(nodeWithOsc) {
           if (nodeWithOsc.isPlaying) {
-            setTimeout(function() {
+ //           setTimeout(function() {
               console.log('stop: ' + nodeWithOsc.osc.frequency.value);
-              nodeWithOsc.gainNode.gain.value = 0;
-              nodeWithOsc.osc.frequency.value = 0;
+ //             nodeWithOsc.gainNode.gain.value = 0;
+//              nodeWithOsc.osc.frequency.value = 0;
               nodeWithOsc.isPlaying = false;
-            }, 10);
+//            }, 10);
           }
 
-          clearTimeout();
+  //        clearTimeout();
         }
+
 
      })
     .catch((err) => {console.log(err);});
