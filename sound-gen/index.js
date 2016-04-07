@@ -78,8 +78,8 @@ navigator.mediaDevices.getUserMedia( {audio: true})
 
         var force = d3.layout.force()
                 .gravity(0.0)   // seems like 'else' in charge is the radius of your mouse -> the radiuse by which the other nodes are repelled by
-                //.charge(function(d, i) { return i ? 0 : -200; })   // return i ? means if i exists (aka True) return 0, else -2000
-                .charge(0)
+                .charge(function(d, i) { return i ? 0 : -200; })   // return i ? means if i exists (aka True) return 0, else -2000
+                //.charge(0)
                 .nodes(nodes)
                 .size([width, height]);
 
