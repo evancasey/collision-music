@@ -12,7 +12,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
 
         var width = 1024,
             height = 700,
-            numNodes = 4;
+            numNodes = 8;
 
         // node -> nodeWithOsc
         function toNodeWithOsc(node) {
@@ -21,14 +21,15 @@ navigator.mediaDevices.getUserMedia( {audio: true})
           osc.connect(gainNode);
 
           gainNode.connect(audioCtx.destination);
-          gainNode.gain.value = 0.1;
+          gainNode.gain.value = 0;
           osc.type = 'sine';
+          osc.start(0);
 
           return { node: node,
                    gainNode: gainNode,
-                   osc: osc};
+                   osc: osc,
+                   isPlaying: false };
         }
-
          
         // nodesWithOsc -> nodes
         function extractNodes(nodesWithOsc) {
@@ -115,6 +116,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
                         l = Math.sqrt(x * x + y * y),
                         r = node.radius + quad.point.radius;
                     if (l < r) {
+                        console.log("collide");
                         startSound(nodeWithOsc);
                         l = (l - r) / l * .5;
                         node.x -= x *= l;
@@ -130,13 +132,25 @@ navigator.mediaDevices.getUserMedia( {audio: true})
         };
 
         function startSound(nodeWithOsc) {
-          console.log("start: "  + nodeWithOsc.osc.frequency.value);
-          nodeWithOsc.osc.frequency.value = 1000;
+          if (!nodeWithOsc.isPlaying) {
+            console.log('start: ' + nodeWithOsc.osc.frequency.value);
+            nodeWithOsc.isPlaying = true;
+            nodeWithOsc.gainNode.gain.value = 0.1;
+            nodeWithOsc.osc.frequency.value = 500;
+          }
         }
 
         function stopSound(nodeWithOsc) {
-          console.log("stop: " + nodeWithOsc.osc.frequency.value);
-          nodeWithOsc.osc.frequency.value = 0;
+          if (nodeWithOsc.isPlaying) {
+            setTimeout(function() {
+              console.log('stop: ' + nodeWithOsc.osc.frequency.value);
+              nodeWithOsc.gainNode.gain.value = 0;
+              nodeWithOsc.osc.frequency.value = 0;
+              nodeWithOsc.isPlaying = false;
+            }, 10);
+          }
+
+          clearTimeout();
         }
 
      })
