@@ -12,29 +12,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
 
         var width = 1024,
             height = 700,
-            numNodes = 25;
-
-
-        var synth = new Tone.MonoSynth({
-          "portamento" : 0.01,
-          "oscillator" : {
-            "type" : "square"
-          },
-          "envelope" : {
-            "attack" : 0.005,
-            "decay" : 0.2,
-            "sustain" : 0.4,
-            "release" : 1.4,
-          },
-          "filterEnvelope" : {
-            "attack" : 0.005,
-            "decay" : 0.1,
-            "sustain" : 0.05,
-            "release" : 0.8,
-            "baseFrequency" : 300,
-            "octaves" : 4
-          }
-        }).toMaster();
+            numNodes = 50;
 
         // node -> nodeWithOsc
         function toNodeWithOsc(node) {
@@ -48,11 +26,33 @@ navigator.mediaDevices.getUserMedia( {audio: true})
           osc.start(0);
 
           var freq = Math.floor(Math.random(0) * 1000);
+          var synth = new Tone.MonoSynth({
+            "portamento" : 0.01,
+            "oscillator" : {
+              "type" : "square"
+            },
+            "envelope" : {
+              "attack" : 0.005,
+              "decay" : 0.2,
+              "sustain" : 0.4,
+              "release" : 1.4,
+            },
+            "filterEnvelope" : {
+              "attack" : 0.005,
+              "decay" : 0.1,
+              "sustain" : 0.05,
+              "release" : 0.8,
+              "baseFrequency" : 300,
+              "octaves" : 4
+            }
+          }).toMaster();
+
 
           return { node: node,
                    gainNode: gainNode,
                    osc: osc,
                    freq: freq,
+                   synth: synth,
                    isPlaying: false };
         }
          
@@ -173,7 +173,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
             // nodeWithOsc.osc.frequency.value = 500;
            
               //synth.triggerAttackRelease("C4", "8n");
-            synth.triggerAttack(nodeWithOsc.freq);
+            nodeWithOsc.synth.triggerAttack(nodeWithOsc.freq);
 
             clearTimeout();
             
@@ -187,6 +187,7 @@ navigator.mediaDevices.getUserMedia( {audio: true})
               console.log('stop: ' + nodeWithOsc.osc.frequency.value);
  //             nodeWithOsc.gainNode.gain.value = 0;
 //              nodeWithOsc.osc.frequency.value = 0;
+            nodeWithOsc.synth.triggerAttack(0);
               nodeWithOsc.isPlaying = false;
 //            }, 10);
           }
